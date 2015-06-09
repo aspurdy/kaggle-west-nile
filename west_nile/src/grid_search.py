@@ -1,9 +1,12 @@
 from __future__ import print_function
+
 from sklearn import cross_validation
 from sklearn.cross_validation import train_test_split
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import classification_report
-from preprocess import load_data
+
+from src.preprocess2 import load_data
+
 
 def grid(clf, tuned_parameters):
     (train, labels, test) = load_data()
@@ -23,6 +26,4 @@ def grid(clf, tuned_parameters):
 
     y_true, y_pred = y_test, clf.predict(x_test)
     print(classification_report(y_true, y_pred))
-
-    scores = cross_validation.cross_val_score(clf, train, labels, cv=kf, scoring='roc_auc')
-    print("AUC: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() / 2))
+    return clf

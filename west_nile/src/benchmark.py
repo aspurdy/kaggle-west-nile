@@ -1,25 +1,13 @@
 from __future__ import print_function
 
-import numpy as np
 import pandas as pd
 import xgboost as xgb
-from sklearn import ensemble, preprocessing
-from sklearn.grid_search import GridSearchCV
-from sklearn.externals import joblib
-from sklearn.metrics import mean_squared_error
 from sklearn import cross_validation
-from sklearn.cross_validation import train_test_split
-from sklearn.metrics import roc_auc_score
-from sklearn import metrics
-from sklearn import linear_model
-from sklearn.svm import SVC
-from sklearn.preprocessing import Imputer
-from sklearn.grid_search import GridSearchCV
-from sklearn.metrics import classification_report
-from preprocess import load_data
-from grid_search import grid
+
+from src.preprocess2 import load_data
 
 (train, labels, test) = load_data()
+
 # drop columns with -1s
 # train = train.ix[:, (train != -1).any(axis=0)]
 # test = test.ix[:, (test != -1).any(axis=0)]
@@ -46,17 +34,25 @@ kf = cross_validation.KFold(len(train), n_folds=4, shuffle=False, random_state=0
 # # rfc_predictions = clf.predict_proba(test)[:, 1]
 #
 #
-tuned_params = {
-    'n_estimators': 100,
-    'subsample': 1,
-    'learning_rate': 0.1,
-    'min_samples_split': 1,
-    'max_depth': 1
-}
+# tuned_params = {
+#     'n_estimators': 100,
+#     'subsample': 1,
+#     'learning_rate': 0.1,
+#     'min_samples_split': 1,
+#     'max_depth': 1
+# }
+#
+# clf = ensemble.GradientBoostingClassifier(**tuned_params)
+# scores = cross_validation.cross_val_score(clf, train, labels, cv=kf, scoring='roc_auc')
+# print("AUC: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() / 2))
+#
+# df = pd.DataFrame()
+# clf.fit(train, labels)
+#
+# df['WnvPresent'] = clf.predict_proba(test)[:, 1]
+# df.index += 1
+# df.to_csv('gbc.csv', index=True, index_label='Id')
 
-clf = ensemble.GradientBoostingClassifier(**tuned_params)
-scores = cross_validation.cross_val_score(clf, train, labels, cv=kf, scoring='roc_auc')
-print("AUC: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() / 2))
 #
 # #
 # # for split in [0.3, 0.5, 0.7]:
@@ -136,25 +132,27 @@ tuned_params = {
     'subsample': [0.1, 0.5, 1],
     'learning_rate': [1, 0.1, 0.01],
     'max_depth': [1, 2, 3],
-    'gamma': [1, 10],
-    'missing': [np.NaN, None]
+    'gamma': [0, 1, 10],
 }
-
-# params = {
-#     'n_estimators': 100,
-#     'subsample': 1,
-#     'learning_rate': 0.1,
-#     'max_depth': 1,
-#     'gamma': 1,
+#
+# fixed_params = {
 #     'missing': np.NaN
 # }
-#
+# best_params = {'n_estimators': 1000, 'subsample': 0.5, 'learning_rate': 0.01, 'max_depth': 3, 'gamma': 1}
+best_params = {'n_estimators': 1000, 'subsample': 0.1, 'learning_rate': 0.01, 'max_depth': 3, 'gamma': 0}
 
-clf = xgb.XGBClassifier()
-grid(clf, tuned_params)
+clf = xgb.XGBClassifier(**best_params)
+# clf = grid(xgb.XGBClassifier(), tuned_params)
 
 scores = cross_validation.cross_val_score(clf, train, labels, cv=kf, scoring='roc_auc')
 print("AUC: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() / 2))
+
+clf.fit(train, labels)
+df = pd.DataFrame()
+
+df['WnvPresent'] = clf.predict_proba(test)[:, 1]
+df.index += 1
+df.to_csv('xgb.csv', index=True, index_label='Id')
 
 # clf.fit(train, labels)
 # svm_predictions = clf.predict_proba(test.astype(float))[:, 1]
